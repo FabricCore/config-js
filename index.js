@@ -6,9 +6,10 @@ function load(name) {
     if (cache[name]) return cache[name];
 
     if (fs.existsSync(`storage/config/${name}.json`)) {
-        return require(`/storage/config/${name}.json`);
+        let got = require(`/storage/config/${name}.json`);
+        if (got != undefined) return got;
     } else {
-        cache[name] = undefined;
+        delete cache[name];
     }
 }
 
@@ -35,6 +36,11 @@ function forceWrite(name) {
 }
 
 function save(name, value, write) {
+    if (value == undefined) {
+        remove(name);
+        return;
+    }
+
     cache[name] = value;
 
     if (write) forceWrite(name);
@@ -46,10 +52,36 @@ function forceWriteAll() {
     }
 }
 
+let allLoaded = false;
+
+function loadRecursive(path = []) {
+    for (let entry of fs.readdirSync(`storage/config/${path.join("/")}`)) {
+        if (entry.endsWith(".json")) {
+            let name = `${path.concat([entry.slice(0, -5)]).join("/")}`;
+            load(name);
+        } else {
+            loadRecursive(path.concat([entry]));
+        }
+    }
+}
+
+function loadAll() {
+    if (!allLoaded && fs.isDirSync("storage/config")) {
+        loadRecursive();
+        allLoaded = true;
+    }
+}
+
+function entries() {
+    loadAll();
+    return Object.keys(cache);
+}
+
 module.exports = {
     load,
     remove,
     forceWrite,
     forceWriteAll,
     save,
+    entries,
 };

@@ -1,6 +1,6 @@
 {
   "name": "config",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Write on quit config.",
   "keywords": [],
   "license": "LGPL-3.0-or-later",
@@ -14,6 +14,8 @@
     "url": "https://github.com/fabriccore/config-js"
   },
   "dependencies": {
-    "rinode": "0.1.0"
+    "rinode": "0.1.0",
+    "command": "0.1.0",
+    "text": "0.1.0"
   }
 }
