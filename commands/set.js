@@ -5,7 +5,6 @@ let { StringArgumentType } = com.mojang.brigadier.arguments;
 function set(obj, path, content) {
     if (path.length == 1) {
         obj[path] = content;
-        console.info("Value updated");
     } else if (!(obj instanceof java.lang.Object) && typeof obj == "object") {
         obj[path[0]] ??= {};
         set(obj[path[0]], path.slice(1), content);
@@ -37,9 +36,7 @@ function walkFields(obj, stack) {
     );
 }
 
-function suggestsFields(ctx) {
-    let entry = StringArgumentType.getString(ctx, "entry");
-
+function suggestsFields(entry) {
     return walkFields(config.load(entry), []);
 }
 
@@ -47,7 +44,12 @@ module.exports = {
     args: {
         entry: {
             type: "string",
-            suggests: config.entries,
+            suggests: () =>
+                config
+                    .entries()
+                    .map((entryName) =>
+                        entryName.includes("/") ? `'${entryName}'` : entryName,
+                    ),
             args: {
                 field: {
                     type: "string",

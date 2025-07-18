@@ -6,7 +6,6 @@ function unset(obj, path) {
     if (path.length == 1) {
         if (Array.isArray(obj)) obj.splice(path[0], 1);
         else delete obj[path[0]];
-        console.info("Value removed");
     } else if (!(obj instanceof java.lang.Object) && typeof obj == "object") {
         obj[path[0]] ??= {};
         unset(obj[path[0]], path.slice(1));
@@ -33,9 +32,7 @@ function walkFields(obj, stack) {
     );
 }
 
-function suggestsFields(ctx) {
-    let entry = StringArgumentType.getString(ctx, "entry");
-
+function suggestsFields(entry) {
     return walkFields(config.load(entry), []);
 }
 
@@ -43,7 +40,12 @@ module.exports = {
     args: {
         entry: {
             type: "string",
-            suggests: config.entries,
+            suggests: () =>
+                config
+                    .entries()
+                    .map((entryName) =>
+                        entryName.includes("/") ? `'${entryName}'` : entryName,
+                    ),
             args: {
                 field: {
                     type: "string",

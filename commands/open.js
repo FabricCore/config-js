@@ -1,4 +1,5 @@
 let config = module.require("../");
+let previous = module.require("./previous");
 let text = require("text");
 
 function valueToCommand(obj) {
@@ -104,7 +105,7 @@ function flatten(obj, stack, entryName, isArray = false) {
                             },
                         ],
                         click: {
-                            suggest: `/config set ${entryName} ${stack.concat([key]).concat([obj[key].length.toString()]).join(".")} ${command} `,
+                            suggest: `/config set ${entryName.includes("/") ? `'${entryName}'` : entryName} ${stack.concat([key]).concat([obj[key].length.toString()]).join(".")} ${command} `,
                         },
                     },
                 ]);
@@ -141,7 +142,7 @@ function flatten(obj, stack, entryName, isArray = false) {
                     { content: stack.concat([key]).join("."), italic: true },
                 ],
                 click: {
-                    suggest: `/config set ${entryName} ${stack.concat([key]).join(".")} ${command} ${obj[key]}`,
+                    suggest: `/config set ${entryName.includes("/") ? `'${entryName}'` : entryName} ${stack.concat([key]).join(".")} ${command} ${obj[key]}`,
                 },
             });
             if (isArray) {
@@ -156,7 +157,7 @@ function flatten(obj, stack, entryName, isArray = false) {
                             italic: true,
                         },
                     ],
-                    click: `/config unset ${entryName} ${stack.concat([key]).join(".")}`,
+                    click: `/config unset ${entryName.includes("/") ? `'${entryName}'` : entryName} ${stack.concat([key]).join(".")}`,
                 });
             }
         }
@@ -191,19 +192,21 @@ function openCommand(entryName) {
     let got = config.load(entryName);
 
     if (got == undefined || got == null || Object.keys(got).length == 0) {
-        text.sendText([
-            header,
-            "\n",
-            {
-                content: "This config is empty.",
-                italic: true,
-                color: "#888888",
-            },
-        ]);
+        previous(
+            text.sendText([
+                header,
+                "\n",
+                {
+                    content: "This config is empty.",
+                    italic: true,
+                    color: "#888888",
+                },
+            ]),
+        );
     } else if (!(got instanceof java.lang.Object) && typeof got == "object") {
-        text.sendText([header].concat(flatten(got, [], entryName)));
+        previous(text.sendText([header].concat(flatten(got, [], entryName))));
     } else {
-        text.sendText([header, "\n"].concat(valToString(got[0])));
+        previous(text.sendText([header, "\n"].concat(valToString(got[0]))));
     }
 }
 
