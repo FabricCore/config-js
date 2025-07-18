@@ -7,6 +7,7 @@ function load(name) {
 
     if (fs.existsSync(`storage/config/${name}.json`)) {
         let got = require(`/storage/config/${name}.json`);
+        cache[name] = got;
         if (got != undefined) return got;
     } else {
         delete cache[name];

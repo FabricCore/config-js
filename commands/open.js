@@ -1,7 +1,22 @@
 let config = module.require("../");
 let text = require("text");
 
-function toString(obj) {
+function valueToCommand(obj) {
+    if (obj instanceof java.lang.Object) return "expression";
+    switch (typeof obj) {
+        case "string":
+            return "string";
+        case "number":
+        case "bigint":
+            return "number";
+        case "boolean":
+            return "boolean";
+        default:
+            return "expression";
+    }
+}
+
+function valToString(obj) {
     if (obj instanceof java.lang.Object) {
         return [
             {
@@ -49,7 +64,7 @@ function toString(obj) {
     }
 }
 
-function flatten(obj, stack, entryName) {
+function flatten(obj, stack, entryName, isArray = false) {
     let keys = Object.keys(obj);
     if (!Array.isArray(obj)) keys.sort();
 
@@ -59,15 +74,63 @@ function flatten(obj, stack, entryName) {
             !(obj[key] instanceof java.lang.Object) &&
             typeof obj[key] == "object"
         ) {
-            out = out.concat(flatten(obj[key], stack.concat([key]), entryName));
+            if (Array.isArray(obj[key])) {
+                let itemTypes = obj[key].map(valueToCommand);
+                let command =
+                    itemTypes.length != 0 &&
+                    itemTypes.every((t) => t == itemTypes[0])
+                        ? itemTypes[0]
+                        : "expression";
+
+                out = out.concat([
+                    "\n",
+                    {
+                        content: `${stack.join(".")}${stack.length == 0 ? "" : "."}`,
+                        color: "#ccccdd",
+                    },
+                    {
+                        content: key,
+                        color: "#eeeeff",
+                    },
+                    " ",
+                    {
+                        content: "[+]",
+                        color: "#888888",
+                        hover: [
+                            "Add an item to array ",
+                            {
+                                content: stack.concat([key]).join("."),
+                                italic: true,
+                            },
+                        ],
+                        click: {
+                            suggest: `/config set ${entryName} ${stack.concat([key]).concat([obj[key].length.toString()]).join(".")} ${command} `,
+                        },
+                    },
+                ]);
+                out = out.concat(
+                    flatten(obj[key], stack.concat([key]), entryName, true),
+                );
+            } else {
+                out = out.concat(
+                    flatten(obj[key], stack.concat([key]), entryName),
+                );
+            }
         } else {
             out.push("\n");
             out.push({
-                content: stack.concat([key]).join("."),
+                content: `${stack.join(".")}${stack.length == 0 ? "" : "."}`,
+                color: "#ccccdd",
+            });
+            out.push({
+                content: key,
                 color: "#eeeeff",
             });
-            out.push({ content: "=", color: "#aaaaaa" });
-            let [display, command] = toString(obj[key]);
+            out.push({
+                content: "=",
+                color: "#776666",
+            });
+            let [display, command] = valToString(obj[key]);
             out.push(display);
             out.push(" ");
             out.push({
@@ -78,9 +141,24 @@ function flatten(obj, stack, entryName) {
                     { content: stack.concat([key]).join("."), italic: true },
                 ],
                 click: {
-                    suggest: `/config set ${entryName} ${stack.concat([key]).join(".")} ${command} `,
+                    suggest: `/config set ${entryName} ${stack.concat([key]).join(".")} ${command} ${obj[key]}`,
                 },
             });
+            if (isArray) {
+                out.push(" ");
+                out.push({
+                    content: "[-]",
+                    color: "#888888",
+                    hover: [
+                        "Remove ",
+                        {
+                            content: stack.concat([key]).join("."),
+                            italic: true,
+                        },
+                    ],
+                    click: `/config unset ${entryName} ${stack.concat([key]).join(".")}`,
+                });
+            }
         }
     }
 
@@ -89,6 +167,13 @@ function flatten(obj, stack, entryName) {
 
 function openCommand(entryName) {
     let header = text.createText([
+        {
+            content: "[<]",
+            hover: "Back to all configs",
+            click: "/config",
+            color: "#888888",
+        },
+        " ",
         {
             content: "[",
             color: "#999933",
@@ -118,7 +203,7 @@ function openCommand(entryName) {
     } else if (!(got instanceof java.lang.Object) && typeof got == "object") {
         text.sendText([header].concat(flatten(got, [], entryName)));
     } else {
-        text.sendText([header, "\n"].concat(toString(got)[0]));
+        text.sendText([header, "\n"].concat(valToString(got[0])));
     }
 }
 
