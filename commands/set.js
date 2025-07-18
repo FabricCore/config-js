@@ -44,12 +44,7 @@ module.exports = {
     args: {
         entry: {
             type: "string",
-            suggests: () =>
-                config
-                    .entries()
-                    .map((entryName) =>
-                        entryName.includes("/") ? `'${entryName}'` : entryName,
-                    ),
+            suggests: () => config.entries(),
             args: {
                 field: {
                     type: "string",

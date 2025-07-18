@@ -1,6 +1,5 @@
 let config = module.require("../");
 let open = module.require("./open");
-let { StringArgumentType } = com.mojang.brigadier.arguments;
 
 function unset(obj, path) {
     if (path.length == 1) {
@@ -40,12 +39,7 @@ module.exports = {
     args: {
         entry: {
             type: "string",
-            suggests: () =>
-                config
-                    .entries()
-                    .map((entryName) =>
-                        entryName.includes("/") ? `'${entryName}'` : entryName,
-                    ),
+            suggests: () => config.entries(),
             args: {
                 field: {
                     type: "string",
